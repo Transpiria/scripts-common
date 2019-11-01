@@ -15,7 +15,7 @@ function clrn() {
 }
 
 function run() {
-    echo -n "Running " ; clrd "$1" 32 ; 
+    echo -n "Running " ; clrd "$1" 32 ;
     exec "$@"
 }
 
@@ -42,19 +42,26 @@ function append_value() {
 function create_file() {
     local readonly file="$1"
   
-    echo -n "Configuring " ; clrd "${file}" 32 ; 
+    echo -n "Configuring " ; clrd "${file}" 32 ;
     mkdir -p "${file%/*}"
     if [ -f "${file}" ]; then
         rm "${file}"
     fi
 }
 
-function run_script {
-    local command=""
+function view_file() {
+    local readonly file="$1"
+
+    echo -n "File " ; clrd "${file}" 32 ;
+    cat "${file}"
+}
+
+function run_script() {
     local file=""
-    local content=""
+    local files=()
     local indent=0
     local run=0
+    local debug=0
 
     while [[ $# -gt 0 ]]; do
         local key="$1"
@@ -62,6 +69,7 @@ function run_script {
         case "${key}" in
             --file)
                 file="$2"
+                files+=("${file}")
                 create_file \
                     "${file}"
                 shift
@@ -83,7 +91,7 @@ function run_script {
                     "${indent}" \
                     "${group}"
                 ;;
-            --val)
+            --value|--val)
                 key="$2"
                 value="$3"
                 append_value \
@@ -92,8 +100,9 @@ function run_script {
                     "${key}" \
                     "${value}"
                 shift
+                shift
                 ;;
-            --str)
+            --string|--str)
                 key="$2"
                 value="$3"
                 append_value \
@@ -102,16 +111,34 @@ function run_script {
                     "${key}" \
                     "\"${value}\""
                 shift
+                shift
+                ;;
+            --view)
+                file="$2"
+                view_file \
+                    "${file}"
+                shift
                 ;;
             --run)
                 run=1
                 shift
                 break
                 ;;
+            --debug)
+                debug=1
+                shift
+                ;;
         esac
 
         shift
     done
+
+    if [[ "${debug}" -eq 1 ]]; then
+        for file in ${files[@]}; do
+            view_file \
+                "${file}"
+        done
+    fi
 
     if [[ "${run}" -eq 1 ]]; then
         run "$@"
